@@ -1,0 +1,41 @@
+    class Service {
+
+        private static final long SIMILARITY_PART = 2;
+        private static final int LENGTH_NOISE = 1;
+        private static final Pattern regexp = Pattern.compile("[^а-я]+");
+
+        List<String> findAllErrors(String title, String text) {
+            String titleLowerCase = title.toLowerCase();
+            String textLowerCase = text.toLowerCase();
+            var originWords = regexp.split(titleLowerCase);
+            StringBuilder regexpSearch = new StringBuilder("");
+            for (int i = 0; i < originWords.length - 1; i++) {
+                String originWord = originWords[i];
+                int length = originWord.length();
+                regexpSearch.append("[а-я]{")
+                        .append(length - LENGTH_NOISE)
+                        .append(",")
+                        .append(length + LENGTH_NOISE)
+                        .append("}[^а-я]+");
+            }
+            String originWord = originWords[originWords.length - 1];
+            int length = originWord.length();
+            regexpSearch.append("[а-я]{").append(length).append("}");
+
+            Set<String> originParts = Arrays.stream(originWords).collect(Collectors.toSet());
+
+            String lowerEx = textLowerCase.replace("«" + titleLowerCase + "»", "");
+            List<String> allMatches = new ArrayList<>();
+            Matcher m = Pattern.compile(regexpSearch.toString())
+                    .matcher(lowerEx);
+            while (m.find()) {
+                allMatches.add(m.group());
+            }
+
+            return allMatches.stream()
+                    .filter(match -> originParts.stream()
+                            .filter(match::contains)
+                            .count() > (originWords.length / SIMILARITY_PART))
+                    .toList();
+        }
+    }
